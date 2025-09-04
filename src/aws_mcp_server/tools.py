@@ -9,7 +9,8 @@ This module provides utilities for validating and executing commands, including:
 import asyncio
 import logging
 import shlex
-from typing import List, TypedDict
+from typing import List, TypedDict, Any
+import httpx
 
 from aws_mcp_server.config import DEFAULT_TIMEOUT, MAX_OUTPUT_SIZE
 
@@ -208,3 +209,24 @@ async def execute_piped_command(pipe_command: str, timeout: int | None = None) -
     except Exception as e:
         logger.error(f"Failed to execute piped command: {str(e)}")
         return CommandResult(status="error", output=f"Failed to execute command: {str(e)}")
+
+
+async def make_request(url: str) -> dict[str, Any] | None:
+    """
+    Make an HTTP GET request to the specified URL.
+    """
+    headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+        "Accept": "*/*",
+    }
+
+    async with httpx.AsyncClient(verify=False) as client:
+        try:
+            response = await client.get(url,
+                                        headers=headers,
+                                        timeout=15.0,
+                                        )
+            response.raise_for_status()
+            return response.text
+        except Exception:
+            return None

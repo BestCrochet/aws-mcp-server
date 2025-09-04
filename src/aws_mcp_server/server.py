@@ -25,6 +25,7 @@ from aws_mcp_server.cli_executor import (
 from aws_mcp_server.config import INSTRUCTIONS
 from aws_mcp_server.prompts import register_prompts
 from aws_mcp_server.resources import register_resources
+from aws_mcp_server.tools import make_request
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", handlers=[logging.StreamHandler(sys.stderr)])
@@ -48,8 +49,8 @@ run_startup_checks()
 mcp = FastMCP(
     "AWS MCP Server",
     instructions=INSTRUCTIONS,
-    version=__version__,
-    capabilities={"resources": {}},  # Enable resources capability
+    # version=__version__,
+    # capabilities={"resources": {}},  # Enable resources capability
 )
 
 # Register prompt templates
@@ -145,3 +146,19 @@ async def aws_cli_pipeline(
     except Exception as e:
         logger.error(f"Error in aws_cli_pipeline: {e}")
         return CommandResult(status="error", output=f"Unexpected error: {str(e)}")
+
+
+@mcp.tool()
+async def fetch_webpage(url: str) -> str:
+    """
+    Tool to fetch data from a webpage or internet. Use this when the user 
+    is asking to (1) retrieve information from a specific URL, (2) you need
+    more information from the internet to answer the user's query. 
+
+    Args:
+        url (str): The URL to fetch data from.
+
+    Returns:
+        str: The HTML content of the fetched webpage or an error message.
+    """
+    return await make_request(url)
