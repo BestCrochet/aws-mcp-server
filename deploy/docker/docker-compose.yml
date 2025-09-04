@@ -9,11 +9,17 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ~/.aws://home/appuser/.aws:ro # Mount AWS credentials as read-only
+      # - ~/.aws://home/appuser/.aws:ro # Mount AWS credentials as read-only
+      - type: bind
+        source: ~/.aws
+        target: /home/appuser/.aws
+        read_only: true
+        
     environment:
       - AWS_PROFILE=default # Specify default AWS profile
       - AWS_MCP_TIMEOUT=300 # Default timeout in seconds (5 minutes)
       - AWS_MCP_TRANSPORT=sse # Transport protocol ("stdio" or "sse")
+      - AWS_REGION=us-west-2
       # - AWS_MCP_MAX_OUTPUT=100000  # Uncomment to set max output size
     restart: unless-stopped
 # To build multi-architecture images:
