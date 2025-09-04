@@ -49,6 +49,7 @@ run_startup_checks()
 mcp = FastMCP(
     "AWS MCP Server",
     instructions=INSTRUCTIONS,
+    host="0.0.0.0",
     # version=__version__,
     # capabilities={"resources": {}},  # Enable resources capability
 )
