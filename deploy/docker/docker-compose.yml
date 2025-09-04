@@ -8,12 +8,12 @@ services:
     # image: ghcr.io/alexei-led/aws-mcp-server:latest
     ports:
       - "8000:8000"
-    volumes:
+    # volumes:
       # - ~/.aws://home/appuser/.aws:ro # Mount AWS credentials as read-only
-      - type: bind
-        source: ~/.aws
-        target: /home/appuser/.aws
-        read_only: true
+      # - type: bind
+      #   source: ~/.aws
+      #   target: /home/appuser/.aws
+      #   read_only: true
         
     environment:
       - AWS_PROFILE=default # Specify default AWS profile

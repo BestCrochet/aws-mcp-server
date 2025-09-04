@@ -100,6 +100,7 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels aws-mcp-server &&
 
 # Set ownership after all files have been copied - avoid .aws directory
 RUN chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /home/appuser
 
 # Switch to non-root user
 USER appuser
