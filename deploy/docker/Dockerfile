@@ -100,7 +100,7 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels aws-mcp-server &&
 
 # Set ownership after all files have been copied - avoid .aws directory
 RUN chown -R appuser:appuser /app
-RUN chown -R appuser:appuser /home/appuser
+RUN chown -R appuser:appuser /home/appuser/.aws
 
 # Switch to non-root user
 USER appuser
@@ -110,6 +110,8 @@ ENV HOME="/home/appuser" \
     PATH="/usr/local/bin:/usr/local/aws/v2/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     AWS_MCP_TRANSPORT=stdio
+
+USER root
 
 # Expose the service port
 EXPOSE 8000
