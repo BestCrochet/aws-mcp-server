@@ -19,11 +19,11 @@ DEFAULT_TIMEOUT = int(os.environ.get("AWS_MCP_TIMEOUT", "300"))
 MAX_OUTPUT_SIZE = int(os.environ.get("AWS_MCP_MAX_OUTPUT", "100000"))
 
 # Transport protocol
-TRANSPORT = os.environ.get("AWS_MCP_TRANSPORT", "stdio")
+TRANSPORT = os.environ.get("AWS_MCP_TRANSPORT", "sse")
 
 # AWS CLI settings
 AWS_PROFILE = os.environ.get("AWS_PROFILE", "default")
-AWS_REGION = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+AWS_REGION = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-west-2"))
 
 # Instructions displayed to client during initialization
 INSTRUCTIONS = """
