@@ -8,6 +8,7 @@ It also provides MCP Resources for AWS profiles, regions, and configuration.
 import asyncio
 import logging
 import sys
+import time
 
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
@@ -26,10 +27,15 @@ from aws_mcp_server.config import INSTRUCTIONS
 from aws_mcp_server.prompts import register_prompts
 from aws_mcp_server.resources import register_resources
 from aws_mcp_server.tools import make_request
+from aws_mcp_server.request_logger import get_request_logger
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", handlers=[logging.StreamHandler(sys.stderr)])
 logger = logging.getLogger("aws-mcp-server")
+
+# Initialize request logger
+request_logger = get_request_logger()
+logger.info(f"Request logging initialized. Logs will be written to: requests.log")
 
 
 # Run startup checks in synchronous context
@@ -75,6 +81,12 @@ async def aws_cli_help(
     Returns:
         CommandHelpResult containing the help text
     """
+    start_time = time.time()
+    input_params = {"service": service, "command": command}
+    error_msg = None
+    status = "success"
+    result = CommandHelpResult(help_text="")  # Initialize with default
+    
     logger.info(f"Getting documentation for service: {service}, command: {command or 'None'}")
 
     try:
@@ -83,10 +95,24 @@ async def aws_cli_help(
 
         # Reuse the get_command_help function from cli_executor
         result = await get_command_help(service, command)
-        return result
     except Exception as e:
         logger.error(f"Error in aws_cli_help: {e}")
-        return CommandHelpResult(help_text=f"Error retrieving help: {str(e)}")
+        error_msg = str(e)
+        status = "error"
+        result = CommandHelpResult(help_text=f"Error retrieving help: {str(e)}")
+    finally:
+        duration_ms = (time.time() - start_time) * 1000
+        request_logger.log_request(
+            tool_name="aws_cli_help",
+            input_params=input_params,
+            output=result,
+            status=status,
+            duration_ms=duration_ms,
+            error=error_msg,
+            metadata={"server": "aws-mcp-server"},
+        )
+    
+    return result
 
 
 @mcp.tool()
@@ -119,34 +145,61 @@ async def aws_cli_pipeline(
     Returns:
         CommandResult containing output and status
     """
+    start_time = time.time()
+    input_params = {"command": command, "timeout": timeout}
+    error_msg = None
+    status = "success"
+    result = CommandResult(status="error", output="")  # Initialize with default
+    
     logger.info(f"Executing command: {command}" + (f" with timeout: {timeout}" if timeout else ""))
 
-    if ctx:
-        is_pipe = "|" in command
-        message = "Executing" + (" piped" if is_pipe else "") + " AWS CLI command"
-        await ctx.info(message + (f" with timeout: {timeout}s" if timeout else ""))
-
     try:
-        result = await execute_aws_command(command, timeout)
+        if ctx:
+            is_pipe = "|" in command
+            message = "Executing" + (" piped" if is_pipe else "") + " AWS CLI command"
+            await ctx.info(message + (f" with timeout: {timeout}s" if timeout else ""))
+
+        cmd_result = await execute_aws_command(command, timeout)
 
         # Format the output for better readability
-        if result["status"] == "success":
+        if cmd_result["status"] == "success":
             if ctx:
                 await ctx.info("Command executed successfully")
+            status = "success"
         else:
             if ctx:
                 await ctx.warning("Command failed")
+            status = "error"
 
-        return CommandResult(status=result["status"], output=result["output"])
+        result = CommandResult(status=cmd_result["status"], output=cmd_result["output"])
     except CommandValidationError as e:
         logger.warning(f"Command validation error: {e}")
-        return CommandResult(status="error", output=f"Command validation error: {str(e)}")
+        error_msg = f"Command validation error: {str(e)}"
+        status = "error"
+        result = CommandResult(status="error", output=error_msg)
     except CommandExecutionError as e:
         logger.warning(f"Command execution error: {e}")
-        return CommandResult(status="error", output=f"Command execution error: {str(e)}")
+        error_msg = f"Command execution error: {str(e)}"
+        status = "error"
+        result = CommandResult(status="error", output=error_msg)
     except Exception as e:
         logger.error(f"Error in aws_cli_pipeline: {e}")
-        return CommandResult(status="error", output=f"Unexpected error: {str(e)}")
+        error_msg = f"Unexpected error: {str(e)}"
+        status = "error"
+        result = CommandResult(status="error", output=error_msg)
+    finally:
+        duration_ms = (time.time() - start_time) * 1000
+        request_logger.log_request(
+            tool_name="aws_cli_pipeline",
+            input_params=input_params,
+            output=result,
+            status=status,
+            duration_ms=duration_ms,
+            error=error_msg,
+            metadata={"server": "aws-mcp-server", "has_pipe": "|" in command},
+        )
+    
+    return result
 
 
 @mcp.tool()
@@ -163,3 +216,4 @@ async def fetch_webpage(url: str) -> str:
         str: The HTML content of the fetched webpage or an error message.
     """
     return await make_request(url)
+

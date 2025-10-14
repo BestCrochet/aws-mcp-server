@@ -35,6 +35,7 @@ The video demonstrates using Claude Desktop with AWS MCP Server to create a new 
 - **Unix Pipe Support** - Filter and transform AWS CLI output using standard Unix pipes and utilities
 - **AWS Resources Context** - Access to AWS profiles, regions, account information, and environment details via MCP Resources
 - **Prompt Templates** - Pre-defined prompt templates for common AWS tasks following best practices
+- **Request Logging** - Comprehensive JSON logging of all requests, actions, and outputs for Splunk ingestion and analysis (see [docs/REQUEST_LOGGING.md](docs/REQUEST_LOGGING.md))
 - **Docker Integration** - Simple deployment through containerization with multi-architecture support (AMD64/x86_64 and ARM64)
 - **AWS Authentication** - Leverages existing AWS credentials on the host machine
 
