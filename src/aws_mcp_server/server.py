@@ -215,5 +215,45 @@ async def fetch_webpage(url: str) -> str:
     Returns:
         str: The HTML content of the fetched webpage or an error message.
     """
-    return await make_request(url)
+    start_time = time.time()
+    input_params = {"url": url}
+    error_msg = None
+    status = "success"
+    result = ""
+    
+    logger.info(f"Fetching webpage: {url}")
+    
+    try:
+        response = await make_request(url)
+        
+        if response is None:
+            error_msg = "Failed to fetch webpage: No response received"
+            status = "error"
+            result = f"Error: {error_msg}"
+        elif isinstance(response, dict):
+            # If response is a dict, convert to string
+            result = str(response)
+            if response.get("error"):
+                error_msg = str(response.get("error"))
+                status = "error"
+        else:
+            result = str(response)
+    except Exception as e:
+        logger.error(f"Error in fetch_webpage: {e}")
+        error_msg = str(e)
+        status = "error"
+        result = f"Error fetching webpage: {str(e)}"
+    finally:
+        duration_ms = (time.time() - start_time) * 1000
+        request_logger.log_request(
+            tool_name="fetch_webpage",
+            input_params=input_params,
+            output={"result": result[:500] if len(result) > 500 else result},  # Truncate long responses in log
+            status=status,
+            duration_ms=duration_ms,
+            error=error_msg,
+            metadata={"server": "aws-mcp-server", "url": url},
+        )
+    
+    return result
 
